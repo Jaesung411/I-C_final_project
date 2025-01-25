@@ -6,8 +6,8 @@ import boto3
 blueprint = Blueprint('s3', __name__, url_prefix='/s3' ,template_folder='templates')
 
 # AWS S3 설정
-S3_BUCKET = 'imagebucketmini3'
-S3_REGION = 'ap-northeast-3'
+S3_BUCKET = 'imagebucketfinalproject'
+S3_REGION = 'ap-northeast-2'
 s3 = boto3.client(
     's3', 
     region_name=S3_REGION

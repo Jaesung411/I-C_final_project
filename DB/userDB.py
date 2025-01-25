@@ -24,7 +24,7 @@ class UserDao:
         
         response = table.get_item(
             Key={
-                'user_id': id  # UserId를 기본 키로 사용
+                'user_id': id  # user_id를 기본 키로 사용
             }
         )
        
@@ -49,7 +49,7 @@ class UserDao:
         # DynamoDB에 사용자 데이터 삽입
         response = table.put_item(
             Item={
-                'user_id': id,  # UserId를 기본 키로 사용
+                'user_id': id,  # user_id를 기본 키로 사용
                 'username': user_name,
                 'userpass': password,
                 'answer': answer,
@@ -68,7 +68,7 @@ class UserDao:
     def get_cart_by_id(self,user_id):
         response = table.get_item(
             Key={
-                'user_id': user_id  # UserId를 기본 키로 사용
+                'user_id': user_id  # user_id를 기본 키로 사용
             }
         )
         # cart 확인
