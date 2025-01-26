@@ -28,13 +28,16 @@ class ProductDao:
         product_detail = response.get('Item')
         return convert_decimal(product_detail)
     
-    def insert_product(self, id, price,description, image):
+    def insert_product(self, id, price,description, client_id,category_id, image):
+
         # DynamoDB에 사용자 데이터 삽입
         response = table.put_item(
             Item={
                 'product_id': id, 
                 'price': price,
                 'description': description,
+                'client_id':client_id,
+                'category_id':category_id,
                 'image_path': image
             }
         )
@@ -46,17 +49,19 @@ class ProductDao:
             }
         )
 
-    def update_product(self, product_id, price, description, image):
+    def update_product(self, product_id, price, description, client_id, category_id, image):
         try:
             response = table.update_item(
                 Key={
                     'product_id': product_id
                 },
-                UpdateExpression="SET image=:i, price=:p, description=:d",
+                UpdateExpression="SET image=:i, price=:p, description=:d,client_id=:c, category_id=:a",
                 ExpressionAttributeValues={
                     ':i': str(image),  # image 값을 문자열로 처리
                     ':p': int(price),  # price를 정수로 변환
-                    ':d': str(description)  # description 값을 문자열로 처리
+                    ':d': str(description),  # description 값을 문자열로 처리
+                    ':c': str(client_id), 
+                    ':a': str(category_id) 
                 },
                 ReturnValues="UPDATED_NEW"  # 업데이트된 항목 반환 (선택사항)
             )

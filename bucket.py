@@ -19,7 +19,7 @@ def bucket():
         product_name = item[0]
         product_quantity = item[1]
         product_detail=ProductDao().get_product(product_name)
-       
+        
         element['product_name'] = product_name
         element['price'] = int(product_detail['price'])
         element['quantity'] = int(product_quantity)
@@ -67,7 +67,7 @@ def checkout():
         string_cart_items = request.form['cart_items']  # 장바구니 데이터
         
         string_data = string_cart_items.replace("'", "\"")  # 작은따옴표를 큰따옴표로 변경
-        
+
         # 문자열을 리스트로 변환
         items = json.loads(string_data)
         user_id = session['login_info'].get('user_id')

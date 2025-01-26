@@ -1,5 +1,7 @@
 from flask import *
 from DB.productDB import *
+from DB.clientDB import *
+from DB.categoryDB import *
 
 blueprint = Blueprint('main', __name__, template_folder='templates')
 
@@ -12,4 +14,6 @@ def index():
 @blueprint.route('/main')
 def main():
     products = ProductDao().get_all_products()
-    return render_template('home.html', products=products, int=int)
+    clients = clientDao().get_all_clients()
+    categories = categoryDao().get_all_categories()
+    return render_template('home.html', products=products, int=int,clients=clients,categories=categories)

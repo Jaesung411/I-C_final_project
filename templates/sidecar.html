@@ -1,0 +1,112 @@
+<li class="nav-item">
+    <!-- 사이드바 열기 버튼 추가 -->
+    <button id="openSidebarBtn" class="btn btn-outline-primary">
+        고객사 대화창
+    </button>
+</li>
+
+<!-- 사이드바 -->
+<div id="sidebar" class="sidebar">
+    <button id="closeSidebarBtn" class="close-btn">&times;</button>
+    <h3>고객사별 대화창</h3>
+    <ul class="list-group">
+        {% for client in clients %}
+        <li class="list-group-item">
+            <strong>{{ client.client_id }}</strong>
+            <button class="btn btn-sm btn-primary float-right chat-btn" data-category="{{ client.client_id }}">
+                채팅창
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    <!-- 대화창 -->
+    <div class="chat-container mt-4" style="display: none;">
+        <div class="chat-header">
+            <h6 id="chat-category-title"></h6>
+        </div>
+        <div class="chat-messages" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+        <div class="input-group mt-2">
+            <input type="text" id="chat-input" class="form-control" placeholder="메시지 입력">
+            <div class="input-group-append">
+                <button class="btn btn-primary" id="send-chat">전송</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // 사이드바 열기 버튼 클릭 시
+        $('#openSidebarBtn').on('click', function () {
+            $('#sidebar').css('width', '300px'); // 사이드바 열기
+        });
+
+        // 사이드바 닫기 버튼 클릭 시
+        $('#closeSidebarBtn').on('click', function () {
+            $('#sidebar').css('width', '0'); // 사이드바 닫기
+        });
+
+        // "대화 시작" 버튼 클릭 시 카테고리별 대화창 표시
+        $('.chat-btn').on('click', function () {
+            const category = $(this).data('category'); // 카테고리 ID 가져오기
+            $('#chat-category-title').text(`${category} 채팅방`); // 제목 업데이트
+            $('.chat-container').show(); // 대화창 표시
+        });
+
+        // "전송" 버튼 클릭 시 메시지 추가
+        $('#send-chat').on('click', function () {
+            const message = $('#chat-input').val(); // 입력된 메시지 가져오기
+            if (message.trim() !== '') {
+                $('.chat-messages').append(`<div class="chat-message"><strong>나:</strong> ${message}</div>`);
+                $('#chat-input').val(''); // 입력창 초기화
+                $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight); // 스크롤 아래로 이동
+            }
+        });
+    });
+</script>
+<style>
+    /* 사이드바 스타일 */
+    .sidebar {
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        right: 0;
+        background-color: #f8f9fa;
+        overflow-x: hidden;
+        transition: 0.5s;
+        padding-top: 20px;
+        border-left: 1px solid #ddd;
+    }
+
+    /* 사이드바 닫기 버튼 */
+    .close-btn {
+        font-size: 36px;
+        color: #333;
+        border: none;
+        background: none;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+
+    /* 사이드바 내용 */
+    .sidebar h3 {
+        text-align: center;
+    }
+
+    .chat-container {
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+    }
+
+    .chat-message {
+        margin-bottom: 10px;
+    }
+
+    .chat-message strong {
+        color: #007bff;
+    }
+</style>

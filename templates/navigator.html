@@ -13,6 +13,9 @@
             {% if 'login_info' in session %}
                 {% if session['login_info'].get('username') == "admin" %}
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.manage_client') }}">고객사 관리</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin.manage_user') }}">사용자 관리</a>
                     </li>
                     <li class="nav-item">
@@ -37,8 +40,11 @@
                     <a class="nav-link" href="{{ url_for('user.login') }}">로그인</a>
                 {% endif %}
             </li>
+            <!-- 사이드바 -->
+            {% include 'sidecar.html' %}
         </ul>
     </div>
+</div>
 </nav>
 
 <style>
