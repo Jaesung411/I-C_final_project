@@ -48,7 +48,29 @@
             {% endfor %}
 
         </div>
-
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center flex-wrap">
+                {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.search', page=page-1, query=request.args.get('query')) }}">Previous</a>
+                    </li>
+                {% endif %}
+                {% for p in pages %}
+                    {% if p == '...' %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% else %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('main.search', page=p, query=request.args.get('query')) }}">{{ p }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.search', page=page+1, query=request.args.get('query')) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
         <!-- 모달 포함 -->
         {% for product in products %}
             {% include 'product_modal.html' %}
