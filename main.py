@@ -42,8 +42,7 @@ def search():
     clients = clientDao().get_all_clients()
     categories = categoryDao().get_all_categories()
     if query:
-        print(1)
-        # images = imageDAO().search_images_by_query(session['userInfo']['userId'], query)
+        products = ProductDao().search_products_by_query(query)
     else:
         products = ProductDao().get_all_products()
 

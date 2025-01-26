@@ -1,5 +1,6 @@
 from flask import *
 import boto3
+from boto3.dynamodb.conditions import Attr
 from decimal import Decimal
 
 dynamodb = boto3.resource(
@@ -27,6 +28,13 @@ class ProductDao:
         )   
         product_detail = response.get('Item')
         return convert_decimal(product_detail)
+    
+    def search_products_by_query(self, query):
+        # 검색 쿼리를 처리하는 메서드
+        response = table.scan(
+            FilterExpression=Attr('product_id').contains(query) | Attr('description').contains(query)
+        )
+        return response.get('Items', [])
     
     def insert_product(self, id, price,description, client_id,category_id, image):
 
