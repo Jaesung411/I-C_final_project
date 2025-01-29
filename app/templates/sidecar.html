@@ -13,7 +13,7 @@
         {% for client in clients %}
         <li class="list-group-item">
             <strong>{{ client.client_id }}</strong>
-            <button class="btn btn-sm btn-primary float-right chat-btn" data-category="{{ client.client_id }}">
+            <button class="btn btn-sm btn-primary float-right chat-btn" data-client="{{ client.client_id }}">
                 채팅창
             </button>
         </li>
@@ -22,7 +22,7 @@
     <!-- 대화창 -->
     <div class="chat-container mt-4" style="display: none;">
         <div class="chat-header">
-            <h6 id="chat-category-title"></h6>
+            <h6 id="chat-client-title"></h6>
         </div>
         <div class="chat-messages" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
         <div class="input-group mt-2">
@@ -34,34 +34,69 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
 <script>
+    const socket = io();
     $(document).ready(function () {
-        // 사이드바 열기 버튼 클릭 시
+        let currentRoom = null;
+
+        // 사이드바 열기 버튼 동작 추가
         $('#openSidebarBtn').on('click', function () {
-            $('#sidebar').css('width', '300px'); // 사이드바 열기
+            $('#sidebar').css('width', '300px'); // 사이드바 너비 설정
         });
 
-        // 사이드바 닫기 버튼 클릭 시
+        // 사이드바 닫기 버튼 동작 추가
         $('#closeSidebarBtn').on('click', function () {
-            $('#sidebar').css('width', '0'); // 사이드바 닫기
+
+            // 기존 방에서 나가기
+            if (currentRoom) {
+                socket.emit('leave', { room: currentRoom });
+                $('.chat-messages').empty(); // 이전 메시지 초기화
+            }
+            
+            $('#sidebar').css('width', '0'); // 사이드바 너비를 0으로 설정
         });
 
-        // "대화 시작" 버튼 클릭 시 카테고리별 대화창 표시
+        // 채팅방 열기
         $('.chat-btn').on('click', function () {
-            const category = $(this).data('category'); // 카테고리 ID 가져오기
-            $('#chat-category-title').text(`${category} 채팅방`); // 제목 업데이트
-            $('.chat-container').show(); // 대화창 표시
+            const client = $(this).data('client');
+
+            // 기존 방에서 나가기
+            if (currentRoom) {
+                socket.emit('leave', { room: currentRoom });
+                $('.chat-messages').empty(); // 이전 메시지 초기화
+            }
+
+            $('#chat-client-title').text(`${client} 채팅방`);
+            $('.chat-container').show();
+            currentRoom = client;
+
+            // WebSocket으로 방 참여 알림
+            socket.emit('join', { room: client });
         });
 
-        // "전송" 버튼 클릭 시 메시지 추가
+        // 메시지 전송
         $('#send-chat').on('click', function () {
-            const message = $('#chat-input').val(); // 입력된 메시지 가져오기
+            const message = $('#chat-input').val();
             if (message.trim() !== '') {
-                $('.chat-messages').append(`<div class="chat-message"><strong>나:</strong> ${message}</div>`);
-                $('#chat-input').val(''); // 입력창 초기화
-                $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight); // 스크롤 아래로 이동
+                // WebSocket으로 메시지 전송
+                socket.emit('message', { room: currentRoom, message: message });
+                $('#chat-input').val('');
             }
         });
+
+        // WebSocket으로 받은 메시지 표시
+        socket.on('message', function (data) {
+            $('.chat-messages').append(`<div class="chat-message"><strong>${data.user}:</strong> ${data.message}</div>`);
+            $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight);
+        });
+
+        // 방 상태 업데이트
+        socket.on('status', function (data) {
+            $('.chat-messages').append(`<div class="chat-message"><em>${data.msg}</em></div>`);
+            $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight);
+        });
+
     });
 </script>
 <style>
