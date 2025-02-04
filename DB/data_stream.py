@@ -8,6 +8,7 @@ kinesis_client = boto3.client(
     region_name='ap-northeast-2'
 )
 
+stream_name = "mini3-data-stream"
 
 dynamodb = boto3.resource(
     'dynamodb',
@@ -15,8 +16,6 @@ dynamodb = boto3.resource(
 )
 
 table = dynamodb.Table('sales')
-
-stream_name = "mini3-data-stream"
 
 class salesdataDao:
 

@@ -47,8 +47,10 @@
                     <button class="btn btn-outline-success" type="submit">Search</button>
                 </form>
             </li>
-            <!-- 사이드바 -->
-            {% include 'sidecar.html' %}
+            {% if 'login_info' in session %}
+                <!-- 사이드바 -->
+                {% include 'sidecar.html' %}
+            {% endif %}
         </ul>
     </div>
 </div>
