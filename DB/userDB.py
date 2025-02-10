@@ -1,13 +1,17 @@
 from flask import *
 import boto3
 from decimal import Decimal
+import pymysql
 
-dynamodb = boto3.resource(
-    'dynamodb',
-    region_name='ap-northeast-2'
+# RDS 인스턴스 연결
+connection = pymysql.connect(
+    host='final-project.cnohqzdklodx.ap-northeast-2.rds.amazonaws.com',
+    user='admin',
+    password='admin1234',
+    database='proj',
+    port=3306
 )
 
-table = dynamodb.Table('users')
 
 class UserDao:
     def __init__(self):
@@ -15,49 +19,40 @@ class UserDao:
 
     def get_all_users(self):
         # 모든 요소 조회
-        response = table.scan()
-        users = response['Items'] 
-        return convert_decimal(users)
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        cursor.close()
+        return users
     
     # 사용자 조회 (id와 password로 확인)
     def get_user(self, id, password):
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (id,))
+        user = cursor.fetchone()
+        cursor.close()
         
-        response = table.get_item(
-            Key={
-                'user_id': id  # user_id를 기본 키로 사용
-            }
-        )
-       
-        # 사용자 확인
-        user = response.get('Item')
-        if user and user.get('userpass') == password:
-            return convert_decimal(user)
+        if user and user[2] == password:  # assuming 'userpass' is the 3rd column
+            return user
         return None
     
     # 사용자 정보 ID로 조회 (마이페이지에서 사용)
     def get_user_by_id(self, user_id):
-        response = table.get_item(
-            Key={
-                'user_id': user_id
-            }
-        )
-
-        # 사용자 정보 반환
-        return convert_decimal(response.get('Item'))
-    
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
+        
     def insert_user(self, user_name, id, password, answer, cart=[]):
-        # DynamoDB에 사용자 데이터 삽입
-        response = table.put_item(
-            Item={
-                'user_id': id,  # user_id를 기본 키로 사용
-                'username': user_name,
-                'userpass': password,
-                'answer': answer,
-                'cart' : []
-            }
-        )
-
-        return f"Insert OK: {response['ResponseMetadata']['HTTPStatusCode']}"
+        cursor = connection.cursor()
+        cursor.execute("""
+            INSERT INTO users (client_id, username, password, answer)
+            VALUES (1, %s, %s, %s, %s, %s)
+        """, (id, user_name, password, answer, str(cart)))
+        connection.commit()
+        cursor.close()
+        return "Insert OK"
 
     def get_current_user(self):
         user_id = session.get('user_id')  # 세션에서 사용자 ID를 가져옴
@@ -66,97 +61,54 @@ class UserDao:
         return None
 
     def get_cart_by_id(self,user_id):
-        response = table.get_item(
-            Key={
-                'user_id': user_id  # user_id를 기본 키로 사용
-            }
-        )
-        # cart 확인
-        cart = response.get('Item').get('cart')
-        
-        if cart == None: 
-            cart = []
-
-        return convert_decimal(cart)
+        cursor = connection.cursor()
+        cursor.execute("SELECT cart FROM user WHERE user_id = %s", (user_id,))
+        cart = cursor.fetchone()
+        cursor.close()
+        if cart:
+            return cart[0]  # Assuming cart is stored as a string
+        return []
     
     def update_cart(self,user_id,product_id, quantity):
-        # 장바구니 업데이트
-        try:
-            # 현재 장바구니 가져오기
-            response = table.get_item(Key={'user_id': user_id})
-            cart = response.get('Item').get('cart')
-         
-            # 장바구니 항목 업데이트
-            updated_cart = []
+        cursor = connection.cursor()
+        cursor.execute("SELECT cart FROM user WHERE user_id = %s", (user_id,))
+        cart = cursor.fetchone()
+        
+        if cart:
+            cart = eval(cart[0])  # If cart is stored as a string, convert it back to a list
             item_found = False
-            
-            for item, curr_quantity in cart:
-                item_name = item
-                if item_name == product_id:
-                    # 해당 상품의 수량 업데이트
-                    curr_quantity = quantity
+            for idx, (item, qty) in enumerate(cart):
+                if item == product_id:
+                    cart[idx] = (item, quantity)
                     item_found = True
-                updated_cart.append([item,curr_quantity])
-            if not item_found:
-                # 상품이 없으면 새로 추가
-                updated_cart.append([product_id, Decimal(quantity)])
+                    break
             
-            # 업데이트된 장바구니 저장
-            response = table.update_item(
-                Key={'user_id': user_id},
-                UpdateExpression="SET cart = :updated_cart",
-                ExpressionAttributeValues={
-                    ':updated_cart': updated_cart
-                },
-                ReturnValues="UPDATED_NEW"
-            )
-            flash("장바구니에 상품이 변경되었습니다.")
-            return convert_decimal(response)
-        except Exception as e:
-            print(f"장바구니 업데이트 오류: {e}")
-            flash("장바구니 추가에 실패했습니다.")
+            if not item_found:
+                cart.append((product_id, quantity))
+            
+            # Update the cart
+            cursor.execute("UPDATE users SET cart = %s WHERE user_id = %s", (str(cart), user_id))
+            connection.commit()
+            cursor.close()
+            return cart
+        cursor.close()
+        return []
 
     def remove_from_cart(self, user_id, product_id):
-        # 장바구니 업데이트
-        try:
-            # 현재 장바구니 가져오기
-            response = table.get_item(Key={'user_id': user_id})
-            cart = response.get('Item').get('cart')
+        cursor = connection.cursor()
+        cursor.execute("SELECT cart FROM users WHERE user_id = %s", (user_id,))
+        cart = cursor.fetchone()
+        
+        if cart:
+            cart = eval(cart[0])  # Convert from string to list
+            updated_cart = [item for item in cart if item[0] != product_id]
             
-            # 장바구니 항목 업데이트
-            updated_cart = []
-            for item, curr_quantity in cart:
-                item_name = item
-                if item_name == product_id:
-                    continue
-                updated_cart.append([item,Decimal(curr_quantity)])
-           
-            # 업데이트된 장바구니 저장
-            response = table.update_item(
-                Key={'user_id': user_id},
-                UpdateExpression="SET cart = :updated_cart",
-                ExpressionAttributeValues={
-                    ':updated_cart': updated_cart
-                },
-                ReturnValues="UPDATED_NEW"
-            )
-            flash("장바구니에 상품이 삭제되었습니다.")
-            return response
-        except Exception as e:
-            print(f"장바구니 업데이트 오류: {e}")
-            flash("장바구니 삭제에 실패했습니다.")
-
-    def remove_all_from_cart(self, user_id):
-        response = table.get_item(Key={'user_id': user_id})
-        # 업데이트된 장바구니 저장
-        response = table.update_item(
-            Key={'user_id': user_id},
-            UpdateExpression="SET cart = :updated_cart",
-            ExpressionAttributeValues={
-                ':updated_cart': []
-            },
-            ReturnValues="UPDATED_NEW"
-        )
+            cursor.execute("UPDATE users SET cart = %s WHERE user_id = %s", (str(updated_cart), user_id))
+            connection.commit()
+            cursor.close()
+            return updated_cart
+        cursor.close()
+        return []
 
 def convert_decimal(data):
     """DynamoDB에서 반환된 데이터를 JSON 직렬화 가능하게 변환"""
